@@ -4,7 +4,8 @@
 
 スマホで撮った写真をアプリが自動で確認し、レシートを見つけると向きを直して通知します。通知をタップすると、画像と指示文がClaudeアプリに渡され、送信するだけでClaudeがGoogleスプレッドシートの家計簿に品目ごとに追記します。
 
-> スクリーンショット: <img width="500" alt="レシート検知の通知" src="https://github.com/user-attachments/assets/07288be5-f7e9-438d-b526-8a1ff8ab5d50" />
+## スクリーンショット
+<img width="500" alt="レシート検知の通知" src="https://github.com/user-attachments/assets/07288be5-f7e9-438d-b526-8a1ff8ab5d50" />
 
 
 ## 使い方
