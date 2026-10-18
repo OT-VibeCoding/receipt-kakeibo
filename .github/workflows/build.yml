@@ -7,11 +7,13 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -34,13 +36,31 @@ jobs:
           name: receipt-kakeibo-apk
           path: app/build/outputs/apk/debug/app-debug.apk
 
-      # main に push されたら「最新版」リリースを作り直し、スマホから APK を直接ダウンロードできるようにする
+      # main に push されたら、GitHub Secrets の鍵で署名した APK を作る
+      - name: Build signed APK
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::GitHub Secrets に署名鍵 (KEYSTORE_BASE64 など) が登録されていません"
+            exit 1
+          fi
+          export KEYSTORE_PATH="$RUNNER_TEMP/release.jks"
+          echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
+          ./gradlew --no-daemon assembleRelease
+          rm -f "$KEYSTORE_PATH"
+
+      # 「最新版」リリースを作り直し、スマホから APK を直接ダウンロードできるようにする
       - name: Publish latest release
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk receipt-kakeibo.apk
+          cp app/build/outputs/apk/release/app-release.apk receipt-kakeibo.apk
           gh release delete latest --yes --cleanup-tag || true
           gh release create latest receipt-kakeibo.apk \
             --title "最新版 (ビルド #${{ github.run_number }})" \
