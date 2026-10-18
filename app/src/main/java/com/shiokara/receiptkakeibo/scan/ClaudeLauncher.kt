@@ -2,10 +2,13 @@ package com.shiokara.receiptkakeibo.scan
 
 import android.content.ActivityNotFoundException
 import android.content.ClipData
+import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.os.PersistableBundle
 import androidx.core.content.FileProvider
 import java.io.File
 
@@ -53,8 +56,21 @@ object ClaudeLauncher {
         context.getSystemService(ClipboardManager::class.java).setPrimaryClip(clip)
     }
 
+    /**
+     * 文章をクリップボードに入れる。指示文にはスプレッドシートの URL が入るため「機密」の印を付け、
+     * コピー時のプレビュー表示やキーボードアプリのクリップボード履歴に出ないようにする。
+     */
     fun copyText(context: Context, label: String, text: String) {
-        context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText(label, text))
+        val clip = ClipData.newPlainText(label, text)
+        clip.description.setExtras(PersistableBundle().apply {
+            val key = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ClipDescription.EXTRA_IS_SENSITIVE
+            } else {
+                "android.content.extra.IS_SENSITIVE"
+            }
+            putBoolean(key, true)
+        })
+        context.getSystemService(ClipboardManager::class.java).setPrimaryClip(clip)
     }
 
     /** 設定したチャットを開く。Claude アプリがあればアプリで、なければブラウザで開く */
