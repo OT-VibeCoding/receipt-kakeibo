@@ -63,7 +63,7 @@ flowchart LR
 ./gradlew assembleDebug       # APK のビルド
 ```
 
-`app/debug.keystore` は、ビルドのたびに署名が変わって上書きインストールできなくなるのを防ぐための、個人利用向けの固定鍵です。ストア配布用ではありません。
+Releases で配布する APK は、GitHub Secrets に登録した署名鍵で CI が署名しています。鍵ファイルはリポジトリには含めていません。手元で `assembleRelease` すると署名なしの APK になります。
 
 このアプリはClaude(Anthropic)と対話しながら設計・実装しました。
 

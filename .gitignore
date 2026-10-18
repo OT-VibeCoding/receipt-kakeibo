@@ -18,3 +18,7 @@ Thumbs.db
 *.jpeg
 *.png
 !docs/**/*.png
+
+# 署名鍵はリポジトリに入れない (GitHub Secrets で CI に渡す)
+*.jks
+*.keystore

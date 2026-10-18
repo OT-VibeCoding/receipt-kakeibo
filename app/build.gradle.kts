@@ -21,22 +21,22 @@ android {
     }
 
     signingConfigs {
-        // 個人利用の直接インストール用。ビルドごとに署名が変わると上書き更新できないため鍵を固定している
-        getByName("debug") {
-            storeFile = file("debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+        // 配布用 APK の署名鍵は GitHub Secrets から CI で渡す (鍵ファイルはリポジトリに入れない)
+        create("release") {
+            System.getenv("KEYSTORE_PATH")?.let { storeFile = file(it) }
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("KEY_ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
         }
     }
 
     buildTypes {
-        debug {
-            signingConfig = signingConfigs.getByName("debug")
-        }
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            // 鍵が渡されていないとき (手元でのビルドなど) は署名なしの APK になる
+            if (System.getenv("KEYSTORE_PATH") != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
