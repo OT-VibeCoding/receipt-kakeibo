@@ -49,9 +49,24 @@ jobs:
             echo "::error::GitHub Secrets に署名鍵 (KEYSTORE_BASE64 など) が登録されていません"
             exit 1
           fi
+          # コピペで紛れ込んだ空白や改行を取り除く (どの値も空白を含まない)
+          export KEYSTORE_PASSWORD="$(printf '%s' "$KEYSTORE_PASSWORD" | tr -d '[:space:]')"
+          export KEY_PASSWORD="$(printf '%s' "$KEY_PASSWORD" | tr -d '[:space:]')"
+          export KEY_ALIAS="$(printf '%s' "$KEY_ALIAS" | tr -d '[:space:]')"
           export KEYSTORE_PATH="$RUNNER_TEMP/release.jks"
-          echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
-          ./gradlew --no-daemon assembleRelease
+          if ! printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > "$KEYSTORE_PATH" 2>/dev/null; then
+            echo "::error::KEYSTORE_BASE64 を鍵ファイルに戻せませんでした。途中で切れていないか確認してください"
+            exit 1
+          fi
+          if ! keytool -list -keystore "$KEYSTORE_PATH" -storepass "$KEYSTORE_PASSWORD" > /dev/null 2>&1; then
+            echo "::error::鍵ファイルを開けませんでした。KEYSTORE_PASSWORD が違うか、KEYSTORE_BASE64 が壊れています"
+            exit 1
+          fi
+          if ! keytool -list -keystore "$KEYSTORE_PATH" -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" > /dev/null 2>&1; then
+            echo "::error::鍵ファイルの中に KEY_ALIAS の鍵がありません"
+            exit 1
+          fi
+          ./gradlew --no-daemon assembleRelease || { echo "::error::署名付き APK のビルドに失敗しました (KEY_PASSWORD を確認してください)"; exit 1; }
           rm -f "$KEYSTORE_PATH"
 
       # 「最新版」リリースを作り直し、スマホから APK を直接ダウンロードできるようにする
